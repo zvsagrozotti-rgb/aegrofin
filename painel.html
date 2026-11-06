@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel — Aegro</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: #0B1D13; color: #E7F3EA;
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    padding: 24px 16px 60px;
+  }
+  .wrap { width: 100%; max-width: 480px; margin: 0 auto; }
+  h1 { font-size: 18px; font-weight: 800; margin: 0 0 4px; }
+  .sub { color: #7FA98A; font-size: 13px; margin: 0 0 18px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+  .card {
+    background: #12271A; border: 1px solid #1E3B27; border-radius: 12px;
+    padding: 16px; text-align: center;
+  }
+  .card .n { font-size: 26px; font-weight: 800; color: #6FE39A; line-height: 1.1; }
+  .card .l { font-size: 11.5px; color: #9CBBA6; margin-top: 6px; }
+  .msg { text-align: center; color: #9CBBA6; padding: 40px 0; font-size: 14px; }
+  .err { text-align: center; color: #E39A9A; padding: 40px 0; font-size: 14px; }
+  .att { text-align: center; color: #557A63; font-size: 11px; margin-top: 20px; }
+  .vazio { text-align: center; color: #557A63; font-size: 12.5px; padding: 20px; }
+
+  /* --- secoes recolhiveis --- */
+  .secao { margin-top: 12px; border: 1px solid #1E3B27; border-radius: 12px; overflow: hidden; background: #0F2116; }
+  .secao-cab {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px; cursor: pointer; user-select: none;
+  }
+  .secao-titulo { font-size: 13px; font-weight: 800; color: #C9E3D2; text-transform: uppercase; letter-spacing: .04em; }
+  .secao-info { display: flex; align-items: center; gap: 8px; }
+  .secao-contagem { color: #557A63; font-size: 11.5px; font-weight: 700; }
+  .secao-seta { color: #557A63; font-size: 11px; transition: transform .15s; }
+  .secao.aberta .secao-seta { transform: rotate(180deg); }
+  .secao-corpo { display: none; padding: 0 16px 16px; }
+  .secao.aberta .secao-corpo { display: block; }
+
+  .lista { background: #12271A; border: 1px solid #1E3B27; border-radius: 12px; overflow: hidden; }
+  .conta { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #1E3B27; }
+  .conta:last-child { border-bottom: none; }
+  .conta .email { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .conta .quando { font-size: 11px; color: #7FA98A; white-space: nowrap; }
+  .conta .tag { font-size: 10px; padding: 1px 6px; border-radius: 5px; margin-left: 6px; }
+  .tag.ok { background: #163B24; color: #6FE39A; }
+  .tag.no { background: #3B1616; color: #E39A9A; }
+
+  /* --- filtros --- */
+  .filtros { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
+  .filtros-linha { display: flex; gap: 8px; }
+  .filtros select, .filtros input {
+    background: #12271A; border: 1px solid #1E3B27; color: #E7F3EA;
+    border-radius: 10px; padding: 10px 12px; font-size: 13px; flex: 1;
+  }
+  .filtros select:focus, .filtros input:focus { outline: 2px solid #2E5E3E; }
+  .btn-mais {
+    display: block; width: 100%; background: #12271A; border: 1px solid #1E3B27;
+    color: #6FE39A; border-radius: 10px; padding: 10px; margin-top: 8px;
+    font-size: 12.5px; font-weight: 700; cursor: pointer; text-align: center;
+  }
+  .btn-mais:active { background: #163B24; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Meus apps</h1>
+    <p class="sub">Acessos e cadastros de teste</p>
+
+    <div class="filtros">
+      <div class="filtros-linha">
+        <select id="fApp">
+          <option value="">Todos os apps</option>
+          <option value="aegrofin-online">AegroFin Online</option>
+          <option value="aegroprecisao">AegroPrecisão</option>
+          <option value="aegrofin">AegroFin</option>
+        </select>
+        <select id="fPeriodo">
+          <option value="hoje">Hoje</option>
+          <option value="7" selected>Últimos 7 dias</option>
+          <option value="30">Últimos 30 dias</option>
+          <option value="">Tudo</option>
+        </select>
+      </div>
+      <input id="fBusca" type="text" placeholder="🔍 Buscar por e-mail ou cidade...">
+    </div>
+
+    <div id="msgTopo"><div class="msg">Carregando…</div></div>
+
+    <div class="secao" id="secEstatisticas" data-sec="estatisticas">
+      <div class="secao-cab"><span class="secao-titulo">📊 Estatísticas</span><span class="secao-info"><span class="secao-seta">▾</span></span></div>
+      <div class="secao-corpo" id="estatisticas"></div>
+    </div>
+
+    <div class="secao" id="secPorApp" data-sec="porApp">
+      <div class="secao-cab"><span class="secao-titulo">📱 Acessos por aplicativo</span><span class="secao-info"><span class="secao-seta">▾</span></span></div>
+      <div class="secao-corpo" id="porApp"></div>
+    </div>
+
+    <div class="secao" id="secAcessos" data-sec="acessos">
+      <div class="secao-cab"><span class="secao-titulo">🕐 Acessos recentes</span><span class="secao-info"><span class="secao-contagem" id="contagemAcessos"></span><span class="secao-seta">▾</span></span></div>
+      <div class="secao-corpo" id="acessos"></div>
+    </div>
+
+    <div class="secao" id="secContas" data-sec="contas">
+      <div class="secao-cab"><span class="secao-titulo">👤 Contas criadas</span><span class="secao-info"><span class="secao-contagem" id="contagemContas"></span><span class="secao-seta">▾</span></span></div>
+      <div class="secao-corpo" id="contas"></div>
+    </div>
+
+    <p class="att" id="att"></p>
+  </div>
+
+<script>
+(function () {
+  var SUPABASE_URL = "https://xlmhpvaxoletxcbjuiqu.supabase.co";
+  var ANON_KEY = "sb_publishable_4VHdPrTLDcOz7MDYwsFOnQ_NnfvnkVG";
+  var params = new URLSearchParams(location.search);
+  var chave = params.get("key") || "";
+  var msgTopo = document.getElementById("msgTopo");
+  var estatisticasEl = document.getElementById("estatisticas");
+  var contasEl = document.getElementById("contas");
+  var acessosEl = document.getElementById("acessos");
+  var porAppEl = document.getElementById("porApp");
+  var att = document.getElementById("att");
+  var fApp = document.getElementById("fApp");
+  var fPeriodo = document.getElementById("fPeriodo");
+  var fBusca = document.getElementById("fBusca");
+
+  var PAGINA = 12;
+  var acessosTodos = [];
+  var contasTodas = [];
+  var mostrarAcessos = PAGINA;
+  var mostrarContas = PAGINA;
+
+  var NOMES_APP = { "aegrofin-online": "AegroFin Online", "aegrofin": "AegroFin", "aegroprecisao": "AegroPrecisão" };
+  function nomeApp(a) { return NOMES_APP[a] || a; }
+
+  // Todas as secoes comecam fechadas - so abre a que a pessoa clicar.
+  document.querySelectorAll(".secao-cab").forEach(function (cab) {
+    cab.addEventListener("click", function () {
+      cab.parentElement.classList.toggle("aberta");
+    });
+  });
+
+  if (!chave) {
+    msgTopo.innerHTML = '<div class="err">Falta a chave de acesso no link.</div>';
+    return;
+  }
+  msgTopo.innerHTML = "";
+
+  function rpc(nome, corpo) {
+    return fetch(SUPABASE_URL + "/rest/v1/rpc/" + nome, {
+      method: "POST",
+      headers: { apikey: ANON_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify(corpo)
+    }).then(function (r) { return r.ok ? r.json() : Promise.reject(r); });
+  }
+
+  function carregarEstatisticas() {
+    rpc("estatisticas_pwa", { p_chave: chave, p_app: fApp.value || null })
+      .then(function (d) {
+        estatisticasEl.innerHTML =
+          '<div class="grid">' +
+            card(d.total_visitas, "Acessos (todos os apps)") +
+            card(d.visitas_7d, "Acessos (7 dias)") +
+            card(d.total_contas, "Contas criadas (total)") +
+            card(d.contas_7d, "Contas criadas (7 dias)") +
+            card(d.total_empresas, "Empresas cadastradas") +
+            card(d.visitas_hoje, "Acessos hoje") +
+          '</div>';
+        att.textContent = "Atualizado agora — recarregue a página pra ver de novo.";
+      })
+      .catch(function () {
+        estatisticasEl.innerHTML = '<div class="err">Chave inválida ou erro ao carregar os dados.</div>';
+      });
+  }
+
+  function carregarPorApp() {
+    rpc("visitas_por_app_pwa", { p_chave: chave })
+      .then(function (lista) {
+        if (!lista || lista.length === 0) { porAppEl.innerHTML = '<div class="vazio">Sem dados ainda.</div>'; return; }
+        porAppEl.innerHTML =
+          '<div class="lista">' +
+          lista.map(function (a) {
+            return '<div class="conta"><span class="email">' + esc(nomeApp(a.app)) + '</span><span class="quando">' + a.total + ' total · ' + a.ultimos_7d + ' (7d) · ' + a.hoje + ' hoje</span></div>';
+          }).join("") +
+          '</div>';
+      })
+      .catch(function () {});
+  }
+
+  function carregarAcessos() {
+    rpc("visitas_recentes_pwa", { p_chave: chave, p_app: fApp.value || null })
+      .then(function (lista) {
+        acessosTodos = lista || [];
+        mostrarAcessos = PAGINA;
+        renderAcessos();
+      })
+      .catch(function () {});
+  }
+
+  function renderAcessos() {
+    var periodo = fPeriodo.value;
+    var buscaTxt = fBusca.value.trim().toLowerCase();
+    var limite = periodo === "hoje" ? 1 : (periodo ? Number(periodo) : null);
+    var corte = limite ? (Date.now() - limite * 86400000) : null;
+
+    var filtrados = acessosTodos.filter(function (v) {
+      if (corte && new Date(v.criado_em).getTime() < corte) return false;
+      if (buscaTxt) {
+        var alvo = [v.cidade, v.regiao, v.pais, nomeApp(v.app)].filter(Boolean).join(" ").toLowerCase();
+        if (alvo.indexOf(buscaTxt) === -1) return false;
+      }
+      return true;
+    });
+
+    document.getElementById("contagemAcessos").textContent = filtrados.length;
+
+    if (filtrados.length === 0) {
+      acessosEl.innerHTML = '<div class="vazio">Nenhum acesso encontrado com esse filtro.</div>';
+      return;
+    }
+
+    var visiveis = filtrados.slice(0, mostrarAcessos);
+    acessosEl.innerHTML =
+      '<div class="lista">' +
+      visiveis.map(function (v) {
+        var quando = new Date(v.criado_em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+        var onde = [v.cidade, v.regiao, v.pais].filter(Boolean).join(", ") || "local desconhecido";
+        return '<div class="conta"><span class="email">' + esc(nomeApp(v.app)) + ' — ' + esc(onde) + '</span><span class="quando">' + quando + '</span></div>';
+      }).join("") +
+      '</div>' +
+      (filtrados.length > visiveis.length ? '<div class="btn-mais" id="maisAcessos">Ver mais (+' + (filtrados.length - visiveis.length) + ')</div>' : "");
+
+    var btn = document.getElementById("maisAcessos");
+    if (btn) btn.onclick = function (e) { e.stopPropagation(); mostrarAcessos += PAGINA; renderAcessos(); };
+  }
+
+  function carregarContas() {
+    rpc("contas_pwa", { p_chave: chave })
+      .then(function (lista) {
+        contasTodas = lista || [];
+        mostrarContas = PAGINA;
+        renderContas();
+      })
+      .catch(function () {});
+  }
+
+  function renderContas() {
+    var buscaTxt = fBusca.value.trim().toLowerCase();
+    var filtradas = contasTodas.filter(function (c) {
+      return !buscaTxt || c.email.toLowerCase().indexOf(buscaTxt) !== -1;
+    });
+
+    document.getElementById("contagemContas").textContent = filtradas.length;
+
+    if (filtradas.length === 0) {
+      contasEl.innerHTML = '<div class="vazio">Nenhuma conta encontrada com esse filtro.</div>';
+      return;
+    }
+
+    var visiveis = filtradas.slice(0, mostrarContas);
+    contasEl.innerHTML =
+      '<div class="lista">' +
+      visiveis.map(function (c) {
+        var quando = new Date(c.criado_em).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+        var tag = c.confirmado ? '<span class="tag ok">confirmada</span>' : '<span class="tag no">pendente</span>';
+        return '<div class="conta"><span class="email">' + esc(c.email) + tag + '</span><span class="quando">' + quando + '</span></div>';
+      }).join("") +
+      '</div>' +
+      (filtradas.length > visiveis.length ? '<div class="btn-mais" id="maisContas">Ver mais (+' + (filtradas.length - visiveis.length) + ')</div>' : "");
+
+    var btn = document.getElementById("maisContas");
+    if (btn) btn.onclick = function (e) { e.stopPropagation(); mostrarContas += PAGINA; renderContas(); };
+  }
+
+  function card(n, label) {
+    return '<div class="card"><div class="n">' + (n == null ? "—" : n) + '</div><div class="l">' + label + '</div></div>';
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  fApp.addEventListener("change", function () { carregarEstatisticas(); carregarAcessos(); });
+  fPeriodo.addEventListener("change", function () { mostrarAcessos = PAGINA; renderAcessos(); });
+  fBusca.addEventListener("input", function () { mostrarAcessos = PAGINA; mostrarContas = PAGINA; renderAcessos(); renderContas(); });
+
+  carregarEstatisticas();
+  carregarPorApp();
+  carregarAcessos();
+  carregarContas();
+})();
+</script>
+</body>
+</html>
